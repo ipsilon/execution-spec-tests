@@ -296,33 +296,36 @@ INVALID: List[Container] = [
         # TODO the exception must be about terminator
         validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
     ),
-    Container(
-        name="no_section_terminator_4a",
-        header_terminator=bytes(),
-        sections=[
-            Section.Code(Op.STOP),
-            Section.Data(data="0xAABBCCDD"),
-        ],
-        # TODO the exception must be about terminator
-        validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
-    ),
-    Container(
-        name="no_data_section_contents",
-        sections=[
-            Section.Code(Op.STOP),
-            Section.Data(data="0x", custom_size=1),
-        ],
-        # TODO: maybe it should detect that it is the data body that is wrong
-        validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
-    ),
-    Container(
-        name="data_section_contents_incomplete",
-        sections=[
-            Section.Code(Op.STOP),
-            Section.Data(data="0xAABBCC", custom_size=4),
-        ],
-        validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
-    ),
+    # FIXME: Container needs "non-returning function" support
+    # Container(
+    #     name="no_section_terminator_4a",
+    #     header_terminator=bytes(),
+    #     sections=[
+    #         Section.Code(Op.STOP),
+    #         Section.Data(data="0xAABBCCDD"),
+    #     ],
+    #     # TODO the exception must be about terminator
+    #     validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
+    # ),
+    # FIXME: Container needs "non-returning function" support
+    # Container(
+    #     name="no_data_section_contents",
+    #     sections=[
+    #         Section.Code(Op.STOP),
+    #         Section.Data(data="0x", custom_size=1),
+    #     ],
+    #     # TODO: maybe it should detect that it is the data body that is wrong
+    #     validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
+    # ),
+    # FIXME: Container needs "non-returning function" support
+    # Container(
+    #     name="data_section_contents_incomplete",
+    #     sections=[
+    #         Section.Code(Op.STOP),
+    #         Section.Data(data="0xAABBCC", custom_size=4),
+    #     ],
+    #     validity_error=EOFException.INVALID_SECTION_BODIES_SIZE,
+    # ),
     Container(
         name="trailing_bytes_after_data_section",
         extra=bytes([0xEE]),
