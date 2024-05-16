@@ -424,6 +424,65 @@ def test_return_data_cleared(
     state_test(env=env, pre=pre, post=post, tx=simple_transaction())
 
 
+def test_eofcreate_revert_eof_returndata(
+    state_test: StateTestFiller,
+):
+    """
+    Verifies the return data is not being deployed, even if happens to be valid EOF
+    """
+    env = Environment()
+    reverting_with_calldata_initcontainer = Container(
+        name="Initcode Subcontainer reverting with its calldata",
+        sections=[
+            Section.Code(
+                code=Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE) + Op.REVERT(0, Op.CALLDATASIZE),
+                code_inputs=0,
+                code_outputs=NON_RETURNING_SECTION,
+                max_stack_height=3,
+            ),
+        ],
+    )
+
+    pre = {
+        TestAddress: Account(balance=10**21, nonce=1),
+        default_address: Account(
+            code=Container(
+                sections=[
+                    Section.Code(
+                        code=Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE)
+                        + Op.SSTORE(0, Op.EOFCREATE[0](0, 0, 0, Op.CALLDATASIZE))
+                        + Op.SSTORE(1, Op.RETURNDATASIZE)
+                        + Op.STOP,
+                        code_inputs=0,
+                        code_outputs=NON_RETURNING_SECTION,
+                        max_stack_height=4,
+                    ),
+                    Section.Container(container=reverting_with_calldata_initcontainer),
+                ],
+            )
+        ),
+    }
+
+    tx = simple_transaction()
+    # Simplest possible valid EOF container, which is going to be revert-returned from initcode,
+    # and must not end up being deployed.
+    tx.data = smallest_runtime_subcontainer
+
+    post = {
+        default_address: Account(
+            # slot 0 - eofcreate result 0 / revert
+            # slot 1 - returndatasize from eofcreate
+            storage={
+                0: 0,
+                1: 20,
+            },
+            nonce=1,
+        ),
+    }
+
+    state_test(env=env, pre=pre, post=post, tx=tx)
+
+
 def test_address_collision(
     state_test: StateTestFiller,
 ):
