@@ -36,4 +36,6 @@
 
 ## EIP-7620: EOF Contract Creation
 
+- [x] `EOFCREATE` reverts with EOF code as message (./eip7620_eof_create/test_eofcreate.py::test_eofcreate_revert_eof_returndata)
+
 ## EIP-7698: EOF - Creation transaction
