@@ -688,6 +688,10 @@ class EOFException(ExceptionBase):
     """
     Top-level EOF container has data section truncated
     """
+    CONTAINER_SIZE_ABOVE_LIMIT = auto()
+    """
+    EOF container is above size limit
+    """
 
 
 """
