@@ -17,6 +17,13 @@ REFERENCE_SPEC_VERSION = "3ee1334ef110420685f1c8ed63e80f9e1766c251"
 
 pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
+smallest_runtime_subcontainer = Container(
+    name="Runtime Subcontainer",
+    sections=[
+        Section.Code(code=Op.STOP),
+    ],
+)
+
 VALID: List[Container] = [
     Container(
         name="empty_data_section",
@@ -51,11 +58,9 @@ VALID: List[Container] = [
     Container(
         name="max_data_section",
         sections=[
-            Section.Code(
-                code=Op.ADDRESS + Op.POP + Op.STOP,
-                max_stack_height=1,
-            ),
-            Section.Data(data=("1122334455667788" * 8 * 1024)[2:]),
+            Section.Code(code=Op.STOP),
+            # Hits the 49152 bytes limit for the entire container
+            Section.Data(data=(b"12345678" * 6 * 1024)[len(smallest_runtime_subcontainer) :]),
         ],
     ),
     Container(
@@ -86,16 +91,6 @@ VALID: List[Container] = [
                 max_stack_height=1,
             ),
             Section.Data(data="1122334455667788" * 16),
-        ],
-    ),
-    Container(
-        name="DATALOADN_max",
-        sections=[
-            Section.Code(
-                code=Op.DATALOADN[0xFFFF - 32] + Op.POP + Op.STOP,
-                max_stack_height=1,
-            ),
-            Section.Data(data=("1122334455667788" * 8 * 1024)[2:]),
         ],
     ),
 ]
@@ -132,6 +127,15 @@ INVALID: List[Container] = [
             Section.Data(data=("1122334455667788" * 4 * 1024)[2:]),
         ],
         validity_error=EOFException.INVALID_DATALOADN_INDEX,
+    ),
+    Container(
+        name="data_section_over_container_limit",
+        sections=[
+            Section.Code(code=Op.STOP),
+            # Over the 49152 bytes limit for the entire container
+            Section.Data(data=(b"12345678" * 6 * 1024)[len(smallest_runtime_subcontainer) - 1 :]),
+        ],
+        validity_error=EOFException.CONTAINER_SIZE_ABOVE_LIMIT,
     ),
 ]
 
