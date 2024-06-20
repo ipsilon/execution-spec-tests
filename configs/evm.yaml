@@ -11,5 +11,5 @@ develop:
 eip7692:
   impl: evmone
   repo: ethereum/evmone
-  ref: master
+  ref: 6e85e661b175e52a007a8bcc4c2d0a855a81e425
   evm-bin: evmone-t8n
