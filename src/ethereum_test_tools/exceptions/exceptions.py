@@ -688,6 +688,10 @@ class EOFException(ExceptionBase):
     """
     Top-level EOF container has data section truncated
     """
+    INVALID_CONTAINER_SECTION_INDEX = auto()
+    """
+    Instruction references container section that does not exist.
+    """
 
 
 """

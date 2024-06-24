@@ -73,6 +73,9 @@ class EvmoneExceptionMapper:
         ExceptionMessage(
             EOFException.TOPLEVEL_CONTAINER_TRUNCATED, "err: toplevel_container_truncated"
         ),
+        ExceptionMessage(
+            EOFException.INVALID_CONTAINER_SECTION_INDEX, "err: invalid_container_section_index"
+        ),
     )
 
     def __init__(self) -> None:
