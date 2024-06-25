@@ -8,7 +8,7 @@ from ethereum_test_tools.exceptions import EOFException
 from ethereum_test_tools.vm.opcode import Opcodes as Op
 
 REFERENCE_SPEC_GIT_PATH = "EIPS/eip-7620.md"
-REFERENCE_SPEC_VERSION = "f20b164b00ae5553f7536a6d7a83a0f254455e09"
+REFERENCE_SPEC_VERSION = "21735026719bf4738f29b5ab67981e76b915d001"
 
 
 def test_returncontract_valid_index_0(
@@ -23,7 +23,8 @@ def test_returncontract_valid_index_0(
                 ),
                 Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)])),
             ],
-        )
+        ),
+        initcode=True,
     )
 
 
@@ -41,7 +42,8 @@ def test_returncontract_valid_index_1(
                 Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)])),
                 Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)])),
             ],
-        )
+        ),
+        initcode=True,
     )
 
 
@@ -60,7 +62,8 @@ def test_returncontract_valid_index_255(
             ]
             + [Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)]))]
             * 256
-        )
+        ),
+        initcode=True,
     )
 
 
@@ -76,6 +79,7 @@ def test_returncontract_invalid_truncated_immediate(
                 ),
             ],
         ),
+        initcode=True,
         expect_exception=EOFException.TRUNCATED_INSTRUCTION,
     )
 
@@ -92,6 +96,7 @@ def test_returncontract_invalid_index_0(
                 ),
             ],
         ),
+        initcode=True,
         expect_exception=EOFException.INVALID_CONTAINER_SECTION_INDEX,
     )
 
@@ -109,6 +114,7 @@ def test_returncontract_invalid_index_1(
                 Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)])),
             ],
         ),
+        initcode=True,
         expect_exception=EOFException.INVALID_CONTAINER_SECTION_INDEX,
     )
 
@@ -126,6 +132,7 @@ def test_returncontract_invalid_index_255(
                 Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)])),
             ],
         ),
+        initcode=True,
         expect_exception=EOFException.INVALID_CONTAINER_SECTION_INDEX,
     )
 
@@ -143,5 +150,6 @@ def test_returncontract_terminating(
                 Section.Container(container=Container(sections=[Section.Code(code=Op.INVALID)])),
             ],
         ),
+        initcode=True,
         expect_exception=EOFException.UNREACHABLE_INSTRUCTIONS,
     )
