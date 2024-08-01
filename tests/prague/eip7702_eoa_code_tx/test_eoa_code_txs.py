@@ -61,7 +61,7 @@ class InvalidityReason(Enum):
     [
         pytest.param(Op.STOP, True, id="stop"),
         pytest.param(Op.RETURN(0, 0), True, id="return"),
-        pytest.param(Op.REVERT, False, id="revert"),
+        pytest.param(Op.REVERT(0, 0), False, id="revert"),
         pytest.param(Op.INVALID, False, id="invalid"),
     ],
 )
@@ -108,7 +108,7 @@ def test_set_code_to_sstore(
         tx=tx,
         post={
             set_code_to_address: Account(storage={k: 0 for k in storage}),
-            auth_signer: Account(nonce=0, code=b"", storage=storage if succeeds else {}),
+            auth_signer: Account(nonce=1, code="0xef0100" + str(set_code_to_address)[2:], storage=storage if succeeds else {}),
         },
     )
 
@@ -154,7 +154,7 @@ def test_set_code_to_sstore_then_sload(
         authorization_list=[
             AuthorizationTuple(
                 address=set_code_2_address,
-                nonce=0,
+                nonce=1,
                 signer=auth_signer,
             ),
         ],
@@ -169,8 +169,8 @@ def test_set_code_to_sstore_then_sload(
         pre=pre,
         post={
             auth_signer: Account(
-                nonce=0,
-                code=b"",
+                nonce=2,
+                code="0xef0100" + str(set_code_2_address)[2:],
                 storage={
                     storage_key_1: storage_value,
                     storage_key_2: storage_value + 1,
@@ -239,7 +239,7 @@ def test_set_code_to_tstore_reentry(
         pre=pre,
         tx=tx,
         post={
-            auth_signer: Account(nonce=0, code=b"", storage={2: tload_value}),
+            auth_signer: Account(nonce=1, code="0xef0100" + str(set_code_to_address)[2:], storage={2: tload_value}),
         },
     )
 
@@ -273,7 +273,7 @@ def test_set_code_to_self_destruct(
         env=Environment(),
         pre=pre,
         tx=tx,
-        post={},
+        post={auth_signer: Account(nonce=1)},
     )
 
 
@@ -334,7 +334,7 @@ def test_set_code_to_contract_creator(
         tx=tx,
         post={
             set_code_to_address: Account(storage={}),
-            auth_signer: Account(nonce=1, code=b"", storage=storage),
+            auth_signer: Account(nonce=2, code="0xef0100" + str(set_code_to_address)[2:], storage=storage),
             deployed_contract_address: Account(
                 code=deployed_code,
                 storage={},
@@ -404,8 +404,8 @@ def test_set_code_to_self_caller(
         post={
             set_code_to_address: Account(storage={}),
             auth_signer: Account(
-                nonce=0,
-                code=b"",
+                nonce=1,
+                code="0xef0100" + str(set_code_to_address)[2:],
                 storage=storage,
                 balance=auth_account_start_balance + value,
             ),
@@ -485,12 +485,14 @@ def test_set_code_call_set_code(
             set_code_to_address_1: Account(storage={k: 0 for k in storage_1}),
             set_code_to_address_2: Account(storage={k: 0 for k in storage_2}),
             auth_signer_1: Account(
-                nonce=0,
+                nonce=1,
+                code="0xef0100" + str(set_code_to_address_1)[2:],
                 storage=storage_1 if op in [Op.CALL, Op.STATICCALL] else storage_1 + storage_2,
                 balance=(0 if op == Op.CALL else value) + auth_account_start_balance,
             ),
             auth_signer_2: Account(
-                nonce=0,
+                nonce=1,
+                code="0xef0100" + str(set_code_to_address_2)[2:],
                 storage=storage_2 if op == Op.CALL else {},
                 balance=(value if op == Op.CALL else 0) + auth_account_start_balance,
             ),
@@ -531,7 +533,7 @@ def test_address_from_set_code(
         tx=tx,
         post={
             set_code_to_address: Account(storage={}),
-            auth_signer: Account(nonce=0, code=b"", storage=storage),
+            auth_signer: Account(nonce=1, code="0xef0100" + str(set_code_to_address)[2:], storage=storage),
         },
     )
 
@@ -603,7 +605,7 @@ def test_ext_code_on_set_code(
         tx=tx,
         post={
             set_code_to_address: Account(storage={}),
-            auth_signer: Account(nonce=0, code=b"", storage=auth_signer_storage, balance=balance),
+            auth_signer: Account(nonce=1, code="0xef0100" + str(set_code_to_address)[2:], storage=auth_signer_storage, balance=balance),
             callee_address: Account(storage=callee_storage),
         },
     )
@@ -664,7 +666,7 @@ def test_self_code_on_set_code(
         tx=tx,
         post={
             set_code_to_address: Account(storage={}),
-            auth_signer: Account(nonce=0, code=b"", storage=storage, balance=balance),
+            auth_signer: Account(nonce=1, code="0xef0100" + str(set_code_to_address)[2:], storage=storage, balance=balance),
         },
     )
 
@@ -744,8 +746,8 @@ def test_set_code_to_account_deployed_in_same_tx(
                 storage={success_slot: 1},
             ),
             auth_signer: Account(
-                nonce=0,
-                code=b"",
+                nonce=1,
+                code="0xef0100" + str(deployed_contract_address)[2:],
                 storage={},
             ),
             contract_creator_address: Account(
@@ -797,8 +799,8 @@ def test_set_code_multiple_valid_authorization_tuples_same_signer(
         tx=tx,
         post={
             auth_signer: Account(
-                nonce=0,
-                code=b"",
+                nonce=len(addresses),
+                code="0xef0100" + str(addresses[-1])[2:],
                 storage={
                     success_slot: 1,
                 },
@@ -846,8 +848,8 @@ def test_set_code_multiple_valid_authorization_tuples_first_invalid_same_signer(
         tx=tx,
         post={
             auth_signer: Account(
-                nonce=0,
-                code=b"",
+                nonce=len(addresses) - 1,
+                code="0xef0100" + str(addresses[-1])[2:],
                 storage={
                     success_slot: 2,
                 },
