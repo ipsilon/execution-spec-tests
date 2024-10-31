@@ -58,6 +58,10 @@ section_terminating_opcodes = {
     Op.JUMPF,
 }
 
+push_opcodes = {
+    op if Op.PUSH1.int() <= op.int() <= Op.PUSH32.int() else Op.PUSH1 for op in all_opcodes
+}
+
 
 # NOTE: `sorted` is used to ensure that the tests are collected in a deterministic order.
 
@@ -115,6 +119,24 @@ def test_all_opcodes_in_container(
         expect_exception=(
             None if opcode in valid_eof_opcodes else EOFException.UNDEFINED_INSTRUCTION
         ),
+    )
+
+
+@pytest.mark.parametrize(
+    "opcode",
+    sorted(invalid_eof_opcodes | undefined_opcodes),
+)
+def test_invalid_opcodes_after_stop(
+    eof_test: EOFTestFiller,
+    opcode: Opcode,
+):
+    """
+    Test that an invalid opcode placed after STOP (terminating instruction) invalidates EOF.
+    """
+    eof_code = Container(sections=[Section.Code(code=Op.STOP + opcode), Section.Data("00" * 32)])
+    eof_test(
+        data=eof_code,
+        expect_exception=EOFException.UNDEFINED_INSTRUCTION,
     )
 
 
@@ -381,4 +403,39 @@ def test_all_opcodes_stack_overflow(
     eof_test(
         data=eof_code,
         expect_exception=exception,
+    )
+
+
+@pytest.mark.parametrize(
+    "opcode",
+    sorted(push_opcodes),
+)
+@pytest.mark.parametrize(
+    "any_imm",
+    [False, True],
+)
+def test_truncated_push_opcodes(
+    eof_test: EOFTestFiller,
+    opcode: Opcode,
+    any_imm: bool,
+):
+    """
+    Test that an PUSH instruction with truncated immediate bytes
+    (therefore a terminating instruction is also missing) invalidates EOF.
+    """
+    if opcode == Op.PUSH1 and any_imm:
+        return  # skip, PUSH1 can be truncated only in one way
+
+    # Compose imm bytes 1 byte shorter than expected, or empty.
+    imm = b"\0" * (opcode.int() - Op.PUSH1.int()) if any_imm else b""
+    eof_code = Container(
+        sections=[
+            Section.Code(bytes(opcode) + imm),
+            # Provide data section potentially confused with missing imm bytes.
+            Section.Data(b"\0" * 64),
+        ]
+    )
+    eof_test(
+        data=eof_code,
+        expect_exception=EOFException.TRUNCATED_INSTRUCTION,
     )
