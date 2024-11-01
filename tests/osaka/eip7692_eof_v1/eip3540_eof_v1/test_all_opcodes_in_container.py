@@ -58,9 +58,7 @@ section_terminating_opcodes = {
     Op.JUMPF,
 }
 
-push_opcodes = {
-    op if Op.PUSH1.int() <= op.int() <= Op.PUSH32.int() else Op.PUSH1 for op in all_opcodes
-}
+data_portion_opcodes = {op for op in all_opcodes if op.has_data_portion()}
 
 
 # NOTE: `sorted` is used to ensure that the tests are collected in a deterministic order.
@@ -408,29 +406,46 @@ def test_all_opcodes_stack_overflow(
 
 @pytest.mark.parametrize(
     "opcode",
-    sorted(push_opcodes),
+    sorted(data_portion_opcodes),
 )
 @pytest.mark.parametrize(
     "any_imm",
     [False, True],
 )
-def test_truncated_push_opcodes(
+@pytest.mark.parametrize(
+    "compute_max_stack_height",
+    [False, True],
+)
+def test_truncated_data_portion_opcodes(
     eof_test: EOFTestFiller,
     opcode: Opcode,
     any_imm: bool,
+    compute_max_stack_height: bool,
 ):
     """
-    Test that an PUSH instruction with truncated immediate bytes
+    Test that an instruction with data portion and truncated immediate bytes
     (therefore a terminating instruction is also missing) invalidates EOF.
     """
-    if opcode == Op.PUSH1 and any_imm:
-        return  # skip, PUSH1 can be truncated only in one way
+    opcode_with_data_portion: bytes = bytes(opcode[1])
+
+    if len(opcode_with_data_portion) == 2 and any_imm:
+        pytest.skip("can only be truncated one-way")
 
     # Compose imm bytes 1 byte shorter than expected, or empty.
-    imm = b"\0" * (opcode.int() - Op.PUSH1.int()) if any_imm else b""
+    opcode_bytes = opcode_with_data_portion[:-1] if any_imm else opcode_with_data_portion[0:1]
+
+    if opcode.min_stack_height > 0:
+        opcode_bytes = bytes(Op.PUSH0 * opcode.min_stack_height) + opcode_bytes
+
+    max_stack_height = (
+        max(opcode.min_stack_height, opcode.pushed_stack_items) if compute_max_stack_height else 0
+    )
+    if compute_max_stack_height and max_stack_height == 0:
+        pytest.skip("max_stack_height is 0")
+
     eof_code = Container(
         sections=[
-            Section.Code(bytes(opcode) + imm),
+            Section.Code(opcode_bytes, max_stack_height=max_stack_height),
             # Provide data section potentially confused with missing imm bytes.
             Section.Data(b"\0" * 64),
         ]
