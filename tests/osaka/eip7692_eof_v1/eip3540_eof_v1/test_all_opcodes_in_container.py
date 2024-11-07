@@ -1,7 +1,8 @@
 """
 EOF Container: check how every opcode behaves in the middle of the valid eof container code
 """
-from typing import Any, Dict, List
+import itertools
+from typing import Any, Dict, Generator, List, Tuple
 
 import pytest
 
@@ -433,22 +434,39 @@ def test_all_opcodes_stack_overflow(
     )
 
 
+def valid_opcode_combinations(
+    compute_max_stack_height_options: List[bool],
+    truncate_all_options: List[bool],
+    opcodes: List[Opcode],
+) -> Generator[Tuple[bool, bool, Opcode], None, None]:
+    """
+    Create valid parameter combinations for test_truncated_data_portion_opcodes().
+    """
+    for opcode, truncate_all, compute_max_stack_height in itertools.product(
+        opcodes, truncate_all_options, compute_max_stack_height_options
+    ):
+        opcode_with_data_portion: bytes = bytes(opcode[1])
+
+        # Skip invalid combinations to avoid using pytest.skip in the test
+        if len(opcode_with_data_portion) == 2 and truncate_all:
+            continue
+        if (
+            compute_max_stack_height
+            and max(opcode.min_stack_height, opcode.pushed_stack_items) == 0
+        ):
+            continue
+
+        yield compute_max_stack_height, truncate_all, opcode
+
+
 @pytest.mark.parametrize(
-    "opcode",
-    sorted(data_portion_opcodes),
-)
-@pytest.mark.parametrize(
-    "truncate_all",
-    [False, True],
-)
-@pytest.mark.parametrize(
-    "compute_max_stack_height",
-    [False, True],
+    "compute_max_stack_height, truncate_all, opcode",
+    valid_opcode_combinations([False, True], [False, True], sorted(data_portion_opcodes)),
 )
 def test_truncated_data_portion_opcodes(
     eof_test: EOFTestFiller,
     opcode: Opcode,
-    truncate_all,
+    truncate_all: bool,
     compute_max_stack_height: bool,
 ):
     """
@@ -456,9 +474,6 @@ def test_truncated_data_portion_opcodes(
     (therefore a terminating instruction is also missing) invalidates EOF.
     """
     opcode_with_data_portion: bytes = bytes(opcode[1])
-
-    if len(opcode_with_data_portion) == 2 and truncate_all:
-        pytest.skip("can only be truncated one-way")
 
     # Compose instruction bytes with empty imm bytes (truncate_all) or 1 byte shorter imm bytes.
     opcode_bytes = opcode_with_data_portion[0:1] if truncate_all else opcode_with_data_portion[:-1]
@@ -469,8 +484,6 @@ def test_truncated_data_portion_opcodes(
     max_stack_height = (
         max(opcode.min_stack_height, opcode.pushed_stack_items) if compute_max_stack_height else 0
     )
-    if compute_max_stack_height and max_stack_height == 0:
-        pytest.skip("max_stack_height is 0")
 
     eof_code = Container(
         sections=[
