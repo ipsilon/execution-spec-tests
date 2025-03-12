@@ -40,7 +40,7 @@ class SectionKind(IntEnum):
     TYPE = 1
     CODE = 2
     CONTAINER = 3
-    DATA = 4
+    DATA = 0xff
 
     def __str__(self) -> str:
         """Return string representation of the section kind."""
