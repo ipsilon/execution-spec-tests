@@ -142,7 +142,7 @@ def test_initcode_aborts(
 Size of the factory portion of test_eofcreate_deploy_sizes, but as the runtime code is dynamic, we
 have to use a pre-calculated size
 """
-factory_size = 74
+factory_size = 78
 
 
 @pytest.mark.parametrize(
@@ -294,7 +294,7 @@ def test_auxdata_size_failures(state_test: StateTestFiller, pre: Alloc, auxdata_
             sections=[
                 Section.Code(
                     code=Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE)
-                    + Op.SSTORE(slot_create_address, Op.EOFCREATE[0](0, 0, 0, Op.CALLDATASIZE))
+                    + Op.SSTORE(slot_create_address, Op.EOFCREATE[0](0, 0, Op.CALLDATASIZE, 0))
                     + Op.SSTORE(slot_code_worked, value_code_worked)
                     + Op.STOP,
                 ),
@@ -352,7 +352,7 @@ def test_eofcreate_insufficient_stipend(
     initcode_container = Container(
         sections=[
             Section.Code(
-                code=Op.SSTORE(slot_create_address, Op.EOFCREATE[0](value, 0, 0, 0))
+                code=Op.SSTORE(slot_create_address, Op.EOFCREATE[0](0, 0, 0, value))
                 + Op.SSTORE(slot_code_worked, value_code_worked)
                 + Op.STOP,
             ),
@@ -456,7 +456,7 @@ def test_insufficient_gas_memory_expansion(
     initcode_container = Container(
         sections=[
             Section.Code(
-                code=Op.SSTORE(slot_create_address, Op.EOFCREATE[0](0, 0, 0, auxdata_size))
+                code=Op.SSTORE(slot_create_address, Op.EOFCREATE[0](0, 0, auxdata_size, 0))
                 + Op.SSTORE(slot_code_should_fail, slot_code_worked)
                 + Op.STOP,
             ),
