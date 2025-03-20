@@ -24,6 +24,7 @@ from .constants import (
     HEADER_SECTION_COUNT_BYTE_LENGTH,
     HEADER_SECTION_KIND_BYTE_LENGTH,
     HEADER_SECTION_SIZE_BYTE_LENGTH,
+    HEADER_SECTION_CONTAINER_SIZE_BYTE_LENGTH,
     NON_RETURNING_SECTION,
     TYPES_INPUTS_BYTE_LENGTH,
     TYPES_OUTPUTS_BYTE_LENGTH,
@@ -251,7 +252,9 @@ class Section(CopyValidateModel):
             if cs.skip_header_listing:
                 continue
             size = cs.custom_size if "custom_size" in cs.model_fields_set else len(cs.data)
-            h += size.to_bytes(HEADER_SECTION_SIZE_BYTE_LENGTH, "big")
+            body_size_length = (
+                HEADER_SECTION_SIZE_BYTE_LENGTH if cs.kind != SectionKind.CONTAINER else HEADER_SECTION_CONTAINER_SIZE_BYTE_LENGTH)
+            h += size.to_bytes(body_size_length, "big")
 
         return h
 
