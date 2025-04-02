@@ -686,6 +686,8 @@ class Transaction(TransactionGeneric[HexNumber], TransactionTransitionToolConver
 
     authorization_list: List[AuthorizationTuple] | None = None
 
+    initcodes: List[Bytes] | None = None
+
     secret_key: Hash | None = None
     error: List[TransactionException] | TransactionException | None = Field(None, exclude=True)
 
@@ -731,7 +733,9 @@ class Transaction(TransactionGeneric[HexNumber], TransactionTransitionToolConver
 
         if "ty" not in self.model_fields_set:
             # Try to deduce transaction type from included fields
-            if self.authorization_list is not None:
+            if self.initcodes is not None:
+                self.ty = 6
+            elif self.authorization_list is not None:
                 self.ty = 4
             elif self.max_fee_per_blob_gas is not None or self.blob_kzg_commitments is not None:
                 self.ty = 3
@@ -778,6 +782,11 @@ class Transaction(TransactionGeneric[HexNumber], TransactionTransitionToolConver
             self.authorization_list = []
         if self.ty != 4:
             assert self.authorization_list is None, "authorization_list must be None"
+
+        if self.ty == 6 and self.initcodes is None:
+            self.initcodes = []
+        if self.ty != 6:
+            assert self.initcodes is None, "initcodes must be None"
 
         if "nonce" not in self.model_fields_set and self.sender is not None:
             self.nonce = HexNumber(self.sender.get_nonce())
@@ -854,7 +863,30 @@ class Transaction(TransactionGeneric[HexNumber], TransactionTransitionToolConver
     def signing_envelope(self) -> List[Any]:
         """Returns the list of values included in the envelope used for signing."""
         to = self.to if self.to else bytes()
-        if self.ty == 4:
+
+        if self.ty == 6:
+            # EIP-7873: https://eips.ethereum.org/EIPS/eip-7873
+            if self.max_priority_fee_per_gas is None:
+                raise ValueError(f"max_priority_fee_per_gas must be set for type {self.ty} tx")
+            if self.max_fee_per_gas is None:
+                raise ValueError(f"max_fee_per_gas must be set for type {self.ty} tx")
+            if self.access_list is None:
+                raise ValueError(f"access_list must be set for type {self.ty} tx")
+            if self.initcodes is None:
+                raise ValueError(f"initcodes must be set for type {self.ty} tx")
+            return [
+                Uint(self.chain_id),
+                Uint(self.nonce),
+                Uint(self.max_priority_fee_per_gas),
+                Uint(self.max_fee_per_gas),
+                Uint(self.gas_limit),
+                to,
+                Uint(self.value),
+                self.data,
+                [a.to_list() for a in self.access_list],
+                self.initcodes,
+            ]
+        elif self.ty == 4:
             # EIP-7702: https://eips.ethereum.org/EIPS/eip-7702
             if self.max_priority_fee_per_gas is None:
                 raise ValueError(f"max_priority_fee_per_gas must be set for type {self.ty} tx")
