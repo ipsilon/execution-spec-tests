@@ -16,6 +16,7 @@ from ethereum_test_types.eof.v1 import Container
 
 from .. import EOF_FORK_NAME
 from .helpers import (
+    slot_all_subcall_gas_gone,
     slot_code_worked,
     slot_create_address,
     smallest_initcode_subcontainer,
@@ -52,11 +53,15 @@ def test_cross_version_creates_fail(
 ):
     """Verifies that CREATE and CREATE2 cannot create EOF contracts."""
     env = Environment()
-    salt_param = [0] if legacy_create_opcode == Op.CREATE2 else []
+
     sender = pre.fund_eoa()
+
+    tx_gas_limit = 10_000_000
     contract_address = pre.deploy_contract(
         code=Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE)
-        + Op.SSTORE(slot_create_address, legacy_create_opcode(0, 0, Op.CALLDATASIZE, *salt_param))
+        + Op.SSTORE(slot_create_address, legacy_create_opcode(size=Op.CALLDATASIZE))
+        # Aproximates whether code until here consumed the 63/64th gas given to subcall
+        + Op.SSTORE(slot_all_subcall_gas_gone, Op.LT(Op.GAS, tx_gas_limit // 64))
         + Op.SSTORE(slot_code_worked, value_code_worked)
         + Op.STOP
     )
@@ -68,16 +73,18 @@ def test_cross_version_creates_fail(
             storage={
                 slot_create_address: EOFCREATE_FAILURE,
                 slot_code_worked: value_code_worked,
-            }
+                slot_all_subcall_gas_gone: 1,
+            },
+            nonce=2,
         )
     }
     tx = Transaction(
         to=contract_address,
-        gas_limit=10_000_000,
+        gas_limit=tx_gas_limit,
         gas_price=10,
         protected=False,
         sender=sender,
-        data=deploy_code,
+        data=deploy_code.bytecode,
     )
 
     state_test(
