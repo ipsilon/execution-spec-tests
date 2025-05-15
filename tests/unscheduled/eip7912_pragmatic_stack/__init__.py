@@ -1,0 +1,5 @@
+"""tbd."""  # noqa: E501
+
+REFERENCE_SPEC_GIT_PATH = "tbd"
+REFERENCE_SPEC_VERSION = "tbd"
+EOF_FORK_NAME = "EOFv1"

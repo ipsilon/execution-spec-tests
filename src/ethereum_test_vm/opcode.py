@@ -378,11 +378,22 @@ def _exchange_encoder(*args: int) -> bytes:
     return int.to_bytes(imm, 1, "big")
 
 
+def _swapn2_encoder(*args: int) -> bytes:
+    assert len(args) == 1, f"SWAPN2 opcode requires one argument, got {len(args)}"
+    return bytes.fromhex("60") + int.to_bytes(args[0], 1, "big")
+
+
 def _swapn_stack_properties_modifier(data: bytes) -> tuple[int, int, int, int]:
     imm = int.from_bytes(data, "big")
     n = imm + 1
     min_stack_height = n + 1
     return 0, 0, min_stack_height, min_stack_height
+
+
+def _swapn2_stack_properties_modifier(data_with_push: bytes) -> tuple[int, int, int, int]:
+    assert len(data_with_push) == 2
+    assert data_with_push[0] == Opcodes.PUSH1.int()
+    return _swapn_stack_properties_modifier(data_with_push[1:])
 
 
 def _dupn_stack_properties_modifier(data: bytes) -> tuple[int, int, int, int]:
@@ -5015,6 +5026,13 @@ class Opcodes(Opcode, Enum):
 
     SWAPN = Opcode(
         0xE7, data_portion_length=1, stack_properties_modifier=_swapn_stack_properties_modifier
+    )
+    # FIXME
+    SWAPN2 = Opcode(
+        0xEA,
+        data_portion_length=1,
+        stack_properties_modifier=_swapn2_stack_properties_modifier,
+        data_portion_formatter=_swapn2_encoder,
     )
     """
     !!! Note: This opcode is under development
