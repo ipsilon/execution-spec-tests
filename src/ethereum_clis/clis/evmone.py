@@ -21,6 +21,7 @@ from ethereum_test_exceptions import (
     ExceptionMapper,
     TransactionException,
 )
+from ethereum_test_exceptions.exceptions.block import BlockException
 from ethereum_test_fixtures.base import FixtureFormat
 from ethereum_test_fixtures.blockchain import BlockchainFixture
 from ethereum_test_fixtures.state import StateFixture
@@ -333,6 +334,7 @@ class EvmoneExceptionMapper(ExceptionMapper):
         TransactionException.GAS_LIMIT_EXCEEDS_MAXIMUM: "max gas limit exceeded",
         # TODO EVMONE needs to differentiate when the section is missing in the
         # header or body
+        BlockException.INVALID_DEPOSIT_EVENT_LAYOUT: "invalid deposit event layout",
         EOFException.MISSING_STOP_OPCODE: "err: no_terminating_instruction",
         EOFException.MISSING_CODE_HEADER: "err: code_section_missing",
         EOFException.MISSING_TYPE_HEADER: "err: type_section_missing",
