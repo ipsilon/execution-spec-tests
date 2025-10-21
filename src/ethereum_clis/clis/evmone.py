@@ -335,6 +335,10 @@ class EvmoneExceptionMapper(ExceptionMapper):
         # TODO EVMONE needs to differentiate when the section is missing in the
         # header or body
         BlockException.INVALID_DEPOSIT_EVENT_LAYOUT: "invalid deposit event layout",
+        # TODO EVMONE needs to differentiate when the system contract is
+        # missing or failing
+        BlockException.SYSTEM_CONTRACT_EMPTY: "system contract empty or failed",
+        BlockException.SYSTEM_CONTRACT_CALL_FAILED: "system contract empty or failed",
         EOFException.MISSING_STOP_OPCODE: "err: no_terminating_instruction",
         EOFException.MISSING_CODE_HEADER: "err: code_section_missing",
         EOFException.MISSING_TYPE_HEADER: "err: type_section_missing",
